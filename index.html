@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple QR Code Generator</title>
+    <meta name="description" content="A free, simple, retro Win95-style QR code generator. Create QR codes instantly for URLs, text, vCards, Wi-Fi, calendar events, email, SMS, and phone calls. No ads, no sign-ups, works offline. Features color palettes and quiet zone options.">
+    <meta name="keywords" content="qr code generator, free qr code, simple qr code, win95, retro, vcard qr code, wifi qr code, calendar qr code, email qr code, sms qr code, text qr code, url qr code, no ads, offline qr code, instant qr code">
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <style>
+        /* Windows 95 Styling */
+        :root {
+            --win95-gray: #c0c0c0; --win95-light-gray: #e0e0e0; --win95-dark-gray: #808080;
+            --win95-white: #ffffff; --win95-black: #000000; --win95-blue: #000080;
+            --win95-bsod-blue: #0000AA; --win95-dark-blue: #000080; --win95-dark-green: #008000;
+            --win95-dark-red: #8B0000;
+            --border-raised-outer: inset -1px -1px var(--win95-black), inset 1px 1px var(--win95-white);
+            --border-raised-inner: inset -2px -2px var(--win95-dark-gray), inset 2px 2px var(--win95-gray);
+            --border-sunken-outer: inset -1px -1px var(--win95-white), inset 1px 1px var(--win95-black);
+            --border-sunken-inner: inset -2px -2px var(--win95-gray), inset 2px 2px var(--win95-dark-gray);
+        }
+        body { background-color: #008080; font-family: 'MS Sans Serif', Tahoma, Geneva, sans-serif; font-size: 12px; color: var(--win95-black); padding: 10px; margin: 0; display: flex; justify-content: center; align-items: flex-start; min-height: 100vh; }
+        .win95-window { background-color: var(--win95-gray); border: 1px solid var(--win95-dark-gray); box-shadow: var(--border-raised-outer), var(--border-raised-inner); padding: 3px; width: 100%; max-width: 800px; box-sizing: border-box; }
+        .win95-title-bar { background-color: var(--win95-blue); color: var(--win95-white); font-weight: bold; padding: 3px 5px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; text-shadow: 1px 1px var(--win95-black); }
+        .win95-title-bar-text { flex-grow: 1; padding-right: 10px; }
+        .win95-title-buttons { display: flex; gap: 2px; }
+        .win95-title-button { display: inline-block; width: 16px; height: 14px; background-color: var(--win95-gray); color: var(--win95-black); border: 1px solid var(--win95-dark-gray); box-shadow: var(--border-raised-outer), var(--border-raised-inner); font-family: 'Arial Black', Gadget, sans-serif; font-size: 10px; line-height: 12px; text-align: center; font-weight: bold; text-shadow: none; cursor: pointer; }
+        .win95-title-button:active { box-shadow: var(--border-sunken-outer), var(--border-sunken-inner); }
+        .win95-content { padding: 10px; display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 15px; }
+        @media (max-width: 768px) { .win95-content { grid-template-columns: minmax(0, 1fr); } .win95-right-pane { margin-top: 15px; min-height: 250px; } }
+        @media (max-width: 480px) { body { padding: 5px; } .win95-content { padding: 5px; gap: 10px; } .win95-title-bar { padding: 2px 4px; } .win95-title-button { width: 14px; height: 12px; line-height: 10px; font-size: 8px;} button, .win95-button { padding: 4px 10px; font-size: 11px; min-width: 65px;} label { font-size: 11px; } input, textarea, select { font-size: 11px; padding: 3px 4px; margin-bottom: 8px;} .input-section { padding: 10px; } .input-section h3 { margin: -20px 0 8px 5px; } #qrcode { padding: 8px; } .win95-right-pane h2 { font-size: 14px; margin-bottom: 10px;} #advancedOptionsContainer .grid-cols-3 { grid-template-columns: 1fr; } #colorPaletteSelect { margin-bottom: 10px;} }
+        label { display: block; margin-bottom: 3px; cursor: default; } /* Default cursor for labels */
+        label[title]:hover { cursor: help; } /* Help cursor ONLY for labels with tooltips */
+        input[type="text"], input[type="url"], input[type="email"], input[type="tel"], input[type="password"], input[type="datetime-local"], textarea, select { background-color: var(--win95-white); border: 1px solid var(--win95-dark-gray); box-shadow: var(--border-sunken-outer), var(--border-sunken-inner); padding: 4px 5px; font-family: inherit; font-size: 12px; width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+        input[type="datetime-local"] { padding: 3px 5px; }
+        select { appearance: none; -webkit-appearance: none; -moz-appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23000000%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 5px top 50%; background-size: 10px auto; padding-right: 25px; }
+        textarea { min-height: 60px; resize: vertical; }
+        input[type="checkbox"] { width: auto; box-shadow: none; border: 1px solid var(--win95-dark-gray); vertical-align: middle; margin-right: 5px; appearance: none; -webkit-appearance: none; -moz-appearance: none; width: 13px; height: 13px; background-color: var(--win95-white); box-shadow: var(--border-sunken-outer), var(--border-sunken-inner); position: relative; cursor: pointer; }
+        input[type="checkbox"]:checked::after { content: '✓'; font-size: 12px; color: var(--win95-black); position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); line-height: 1; }
+        label[for="wifiHidden"] { display: inline; margin-left: 0; }
+        button, .win95-button { background-color: var(--win95-gray); border: 1px solid var(--win95-dark-gray); box-shadow: var(--border-raised-outer), var(--border-raised-inner); padding: 5px 15px; font-family: inherit; font-size: 12px; cursor: pointer; min-width: 75px; text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 5px; box-sizing: border-box; }
+        button:active, .win95-button:active { box-shadow: var(--border-sunken-outer), var(--border-sunken-inner); padding: 6px 14px 4px 16px; }
+        button:disabled, .win95-button:disabled { color: var(--win95-dark-gray); text-shadow: 1px 1px var(--win95-white); cursor: default; box-shadow: var(--border-raised-outer), var(--border-raised-inner); }
+        button:disabled:active, .win95-button:disabled:active { padding: 5px 15px; }
+        button:focus, select:focus, input:focus, textarea:focus { outline: 1px dotted var(--win95-black); outline-offset: 1px; box-shadow: none; }
+        #generateBtn { font-weight: bold; width: 100%; }
+        #downloadBtn { width: 100%; }
+        .action-buttons-container { display: flex; gap: 5px; width: 100%; }
+        .action-buttons-container button { flex-grow: 1; }
+        .input-section { display: none; border: 1px solid var(--win95-dark-gray); box-shadow: var(--border-sunken-outer), var(--border-sunken-inner); padding: 15px; margin-top: 10px; background-color: var(--win95-gray); }
+        .input-section.active { display: block; }
+        .input-section h3 { margin: -25px 0 10px 5px; background: var(--win95-gray); padding: 0 5px; display: inline-block; font-weight: normal; }
+        #vcard-input .grid-2col, #calendar-input .grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        @media (max-width: 480px) { #vcard-input .grid-2col, #calendar-input .grid-2col { grid-template-columns: 1fr; } }
+        #toggleAdvanced { background: none; border: none; box-shadow: none; color: var(--win95-blue); text-decoration: underline; cursor: pointer; padding: 0; min-width: auto; }
+        #toggleAdvanced:active { padding: 0; }
+        #advancedOptionsContainer { border: 1px solid var(--win95-dark-gray); box-shadow: var(--border-sunken-outer), var(--border-sunken-inner); padding: 15px; margin-top: 10px; background-color: var(--win95-gray); }
+        #advancedOptionsContainer .grid-cols-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 10px; }
+        .advanced-options-title { margin: -25px 0 10px 5px; background: var(--win95-gray); padding: 0 5px; display: inline-block; font-weight: normal; }
+        .win95-right-pane { background-color: var(--win95-gray); border: 1px solid var(--win95-dark-gray); box-shadow: var(--border-sunken-outer), var(--border-sunken-inner); padding: 15px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 300px; }
+        .win95-right-pane h2 { margin-top: 0; margin-bottom: 15px; font-weight: normal; }
+        #qrcode { background-color: var(--win95-white); border: 1px solid var(--win95-dark-gray); box-shadow: var(--border-sunken-outer), var(--border-sunken-inner); padding: 10px; margin-bottom: 15px; display: flex; align-items: center; justify-content: center; width: 100%; max-width: calc(256px + 2 * 10px); min-height: 150px; box-sizing: border-box; }
+        #qrcode canvas, #qrcode img { display: block; max-width: 100%; height: auto; border: none; box-shadow: none; }
+        #qrCodePlaceholderSpan { color: var(--win95-dark-gray); text-align: center; }
+        #actionsSection { width: 100%; max-width: 256px; margin-top: 10px; }
+        #actionsSection .win95-button { width: 100%; margin-bottom: 5px; }
+        #actionsSection .action-buttons-container { display: flex; gap: 5px; width: 100%; }
+        #actionsSection .action-buttons-container button { flex-grow: 1; }
+        .error-message { color: #ff0000; font-size: 11px; margin-top: 3px; }
+        #errorMessage, #feedbackMessage { font-size: 11px; text-align: center; margin-top: 5px; min-height: 15px; }
+        #errorMessage { color: #ff0000; }
+        #feedbackMessage { color: #008000; }
+        .hidden { display: none; }
+
+        /* BSOD Styles */
+        #bsodOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: var(--win95-bsod-blue); color: var(--win95-white); font-family: 'Lucida Console', 'Courier New', monospace; font-size: 16px; padding: 30px; z-index: 9999; box-sizing: border-box; line-height: 1.4; }
+        #bsodOverlay .bsod-center { text-align: center; margin-bottom: 2em; }
+        #bsodOverlay .bsod-center span { background-color: var(--win95-gray); color: var(--win95-bsod-blue); padding: 0 5px; font-weight: bold; }
+        #bsodOverlay p { margin-bottom: 1em; }
+
+    </style>
+</head>
+<body>
+
+    <div class="win95-window">
+        <div class="win95-title-bar">
+             <span class="win95-title-bar-text">Simple QR Code Generator</span>
+             <div class="win95-title-buttons">
+                 <span id="minBtn" class="win95-title-button" aria-label="Minimize (Easter Egg)" title="Minimize (Easter Egg)">_</span>
+                 <span id="maxBtn" class="win95-title-button" aria-label="Maximize (Easter Egg)" title="Maximize (Easter Egg)">□</span>
+                 <span id="closeBtn" class="win95-title-button" aria-label="Close (Easter Egg)" title="Close (Easter Egg)">X</span>
+             </div>
+        </div>
+        <div class="win95-content">
+
+            <div class="win95-left-pane">
+                <div>
+                    <label for="dataType">Type of Information:</label>
+                    <select id="dataType" name="dataType">
+                        <option value="url" selected>URL</option>
+                        <option value="text">Text</option>
+                        <option value="vcard">vCard (Contact)</option>
+                        <option value="calendar">Calendar Event</option>
+                        <option value="email">Email</option>
+                        <option value="phone">Phone Call</option>
+                        <option value="sms">SMS</option>
+                        <option value="wifi">Wi-Fi</option>
+                    </select>
+                </div>
+
+                <div id="inputSectionsContainer">
+                    <div id="url-input" class="input-section active">
+                        <h3>URL</h3>
+                        <div> <label for="urlData">Website URL:</label> <input type="url" id="urlData" name="urlData" placeholder="https://example.com"> <p id="urlDataError" class="error-message hidden"></p> </div>
+                    </div>
+                    <div id="text-input" class="input-section">
+                         <h3>Text</h3>
+                         <div> <label for="textData">Your Text:</label> <textarea id="textData" name="textData" rows="4" placeholder="Enter any text here..."></textarea> <p id="textDataError" class="error-message hidden"></p> </div>
+                    </div>
+                    <div id="vcard-input" class="input-section">
+                        <h3>Contact Information (vCard)</h3>
+                        <div class="grid-2col">
+                            <div> <label for="vcardFirstName">First Name:</label> <input type="text" id="vcardFirstName" placeholder="John"> <p id="vcardFirstNameError" class="error-message hidden"></p> </div>
+                            <div> <label for="vcardLastName">Last Name:</label> <input type="text" id="vcardLastName" placeholder="Doe"> </div>
+                            <div> <label for="vcardOrg">Organization:</label> <input type="text" id="vcardOrg" placeholder="Company Inc."> </div>
+                            <div> <label for="vcardTitle">Job Title:</label> <input type="text" id="vcardTitle" placeholder="Manager"> </div>
+                        </div>
+                         <div style="margin-top: 10px;"> <label for="vcardTelCell">Phone (Mobile):</label> <input type="tel" id="vcardTelCell" placeholder="+1-555-555-5555"> </div>
+                        <div> <label for="vcardTelWork">Phone (Work):</label> <input type="tel" id="vcardTelWork" placeholder="+1-555-555-1234"> </div>
+                        <div> <label for="vcardEmail">Email:</label> <input type="email" id="vcardEmail" placeholder="john.doe@example.com"> </div>
+                        <div> <label for="vcardWebsite">Website:</label> <input type="url" id="vcardWebsite" placeholder="https://www.example.com"> </div>
+                    </div>
+                    <div id="calendar-input" class="input-section">
+                        <h3>Calendar Event (iCalendar)</h3>
+                        <div> <label for="calSummary">Event Summary/Title:</label> <input type="text" id="calSummary" placeholder="Team Meeting"> <p id="calSummaryError" class="error-message hidden"></p> </div>
+                        <div class="grid-2col">
+                             <div> <label for="calStart">Start Date & Time:</label> <input type="datetime-local" id="calStart"> <p id="calStartError" class="error-message hidden"></p> </div>
+                             <div> <label for="calEnd">End Date & Time:</label> <input type="datetime-local" id="calEnd"> <p id="calEndError" class="error-message hidden"></p> </div>
+                        </div>
+                        <div> <label for="calLocation">Location:</label> <input type="text" id="calLocation" placeholder="Conference Room B"> </div>
+                        <div> <label for="calDescription">Description:</label> <textarea id="calDescription" rows="3" placeholder="Discuss project progress..."></textarea> </div>
+                    </div>
+                    <div id="email-input" class="input-section">
+                        <h3>Email Details</h3>
+                        <div> <label for="emailTo">Recipient Email:</label> <input type="email" id="emailTo" name="emailTo" placeholder="recipient@example.com"> <p id="emailToError" class="error-message hidden"></p> </div>
+                        <div> <label for="emailSubject">Subject (Optional):</label> <input type="text" id="emailSubject" name="emailSubject" placeholder="Email Subject"> </div>
+                        <div> <label for="emailBody">Body (Optional):</label> <textarea id="emailBody" name="emailBody" rows="3" placeholder="Email body..."></textarea> </div>
+                    </div>
+                    <div id="phone-input" class="input-section">
+                         <h3>Phone Call</h3>
+                         <div> <label for="phoneNum">Phone Number:</label> <input type="tel" id="phoneNum" placeholder="+1-555-555-1212"> <p id="phoneNumError" class="error-message hidden"></p> </div>
+                    </div>
+                    <div id="sms-input" class="input-section">
+                        <h3>SMS Message</h3>
+                        <div> <label for="smsNumber">Phone Number:</label> <input type="tel" id="smsNumber" name="smsNumber" placeholder="+1234567890"> <p id="smsNumberError" class="error-message hidden"></p> </div>
+                        <div> <label for="smsMessage">Message (Optional):</label> <textarea id="smsMessage" name="smsMessage" rows="3" placeholder="Your SMS message..."></textarea> </div>
+                    </div>
+                    <div id="wifi-input" class="input-section">
+                        <h3>Wi-Fi Network</h3>
+                        <div> <label for="wifiSSID">Network Name (SSID):</label> <input type="text" id="wifiSSID" name="wifiSSID" placeholder="MyNetworkName"> <p id="wifiSSIDError" class="error-message hidden"></p> </div>
+                        <div> <label for="wifiPassword">Password:</label> <input type="password" id="wifiPassword" name="wifiPassword" placeholder="Network Password"> </div>
+                        <div> <label for="wifiEncryption">Encryption:</label> <select id="wifiEncryption" name="wifiEncryption"> <option value="WPA" selected>WPA/WPA2</option> <option value="WEP">WEP</option> <option value="nopass">None (Open Network)</option> </select> </div>
+                         <div style="margin-top: 5px;"> <input type="checkbox" id="wifiHidden" name="wifiHidden"> <label for="wifiHidden">Hidden Network?</label> </div>
+                    </div>
+                </div>
+
+                 <div style="margin-top: 15px;">
+                     <button id="toggleAdvanced" type="button">More Options...</button>
+                 </div>
+
+                <div id="advancedOptionsContainer" class="hidden">
+                     <span class="advanced-options-title">Advanced Options</span>
+                     <div class="grid-cols-3">
+                        <div>
+                            <label for="qrSize" title="Sets the width and height of the generated QR code image in pixels (before padding is added).">Size (pixels):</label>
+                            <select id="qrSize" name="qrSize">
+                                <option value="128">128x128</option>
+                                <option value="256" selected>256x256</option>
+                                <option value="384">384x384</option>
+                                <option value="512">512x512</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="qrErrorCorrection" title="Higher levels add more redundancy, allowing the QR code to be partially damaged or obscured and still scan correctly.">Error Correction:</label>
+                            <select id="qrErrorCorrection" name="qrErrorCorrection">
+                                <option value="L">Low (7%)</option>
+                                <option value="M" selected>Medium (15%)</option>
+                                <option value="Q">Quartile (25%)</option>
+                                <option value="H">High (30%)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="qrPadding" title="Adds white space padding around the QR code image itself, improving scannability on cluttered backgrounds.">Quiet Zone (px):</label>
+                            <select id="qrPadding" name="qrPadding">
+                                <option value="8">8px</option>
+                                <option value="16" selected>16px (Default)</option>
+                                <option value="32">32px</option>
+                                <option value="0">0px (None)</option>
+                            </select>
+                        </div>
+                    </div>
+                     <div style="margin-top: 10px;">
+                         <label for="colorPaletteSelect" title="Selects the foreground and background colors for the QR code. Ensure good contrast for scannability.">Color Palette:</label>
+                         <select id="colorPaletteSelect" name="colorPaletteSelect">
+                             <option value="black-white" selected>Black on White</option>
+                             <option value="darkblue-white">Dark Blue on White</option>
+                             <option value="darkgreen-white">Dark Green on White</option>
+                             <option value="darkred-white">Dark Red on White</option>
+                             <option value="darkgray-white">Dark Gray on White</option>
+                             <option value="black-lightgray">Black on Light Gray</option>
+                             <option value="darkblue-lightgray">Dark Blue on Light Gray</option>
+                         </select>
+                     </div>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <button id="generateBtn" type="button">Generate QR Code</button>
+                    <p id="errorMessage" class="error-message hidden"></p>
+                    <p id="feedbackMessage" class="hidden"></p> </div>
+            </div>
+
+            <div class="win95-right-pane">
+                 <h2>QR Code</h2>
+                 <div id="qrcode">
+                     <span id="qrCodePlaceholderSpan">Enter data and click "Generate"</span>
+                 </div>
+                 <div id="actionsSection" class="hidden">
+                     <button id="downloadBtn" type="button" class="win95-button">Download PNG</button>
+                     <div class="action-buttons-container">
+                         <button id="copyBtn" type="button" class="win95-button">Copy</button>
+                         <button id="printBtn" type="button" class="win95-button">Print</button>
+                         <button id="shareBtn" type="button" class="win95-button">Share</button>
+                    </div>
+                 </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="bsodOverlay" class="hidden">
+        <div class="bsod-center">
+            <span>QR Code Generator</span>
+        </div>
+        <p>A fatal exception 0E has occurred at 0028:C0011E36 in VXD QRCODE(01) + 00001E36.</p>
+        <p>You clicked a fake window button. This application will now terminate.</p>
+        <p>* Press any key to return to QR Code Generator.</p>
+        <p>* Lose any unsaved data in the fields.</p>
+        <p>* Blame the developer.</p>
+        <br>
+        <p>Press any key to continue <span id="blinkCursor">_</span></p>
+    </div>
+
+
+    <script>
+        // --- DOM Elements ---
+        const dataTypeSelect = document.getElementById('dataType');
+        const inputSectionsContainer = document.getElementById('inputSectionsContainer');
+        const allInputSections = inputSectionsContainer.querySelectorAll('.input-section');
+        const generateBtn = document.getElementById('generateBtn');
+        const qrCodeContainer = document.getElementById('qrcode');
+        const actionsSection = document.getElementById('actionsSection');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const copyBtn = document.getElementById('copyBtn');
+        const printBtn = document.getElementById('printBtn');
+        const shareBtn = document.getElementById('shareBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const feedbackMessage = document.getElementById('feedbackMessage');
+        const qrSizeSelect = document.getElementById('qrSize');
+        const qrErrorCorrectionSelect = document.getElementById('qrErrorCorrection');
+        const qrPaddingSelect = document.getElementById('qrPadding');
+        const toggleAdvancedBtn = document.getElementById('toggleAdvanced');
+        const advancedOptionsContainer = document.getElementById('advancedOptionsContainer');
+        const colorPaletteSelect = document.getElementById('colorPaletteSelect');
+        const minBtn = document.getElementById('minBtn');
+        const maxBtn = document.getElementById('maxBtn');
+        const closeBtn = document.getElementById('closeBtn');
+        const bsodOverlay = document.getElementById('bsodOverlay');
+        const blinkCursor = document.getElementById('blinkCursor'); // Blinking cursor span
+
+        // Input Fields
+        const urlDataInput = document.getElementById('urlData');
+        const textDataInput = document.getElementById('textData');
+        const vcardFirstNameInput = document.getElementById('vcardFirstName');
+        const vcardLastNameInput = document.getElementById('vcardLastName');
+        const vcardOrgInput = document.getElementById('vcardOrg');
+        const vcardTitleInput = document.getElementById('vcardTitle');
+        const vcardTelCellInput = document.getElementById('vcardTelCell');
+        const vcardTelWorkInput = document.getElementById('vcardTelWork');
+        const vcardEmailInput = document.getElementById('vcardEmail');
+        const vcardWebsiteInput = document.getElementById('vcardWebsite');
+        const calSummaryInput = document.getElementById('calSummary');
+        const calStartInput = document.getElementById('calStart');
+        const calEndInput = document.getElementById('calEnd');
+        const calLocationInput = document.getElementById('calLocation');
+        const calDescriptionInput = document.getElementById('calDescription');
+        const emailToInput = document.getElementById('emailTo');
+        const emailSubjectInput = document.getElementById('emailSubject');
+        const emailBodyInput = document.getElementById('emailBody');
+        const phoneNumInput = document.getElementById('phoneNum');
+        const smsNumberInput = document.getElementById('smsNumber');
+        const smsMessageInput = document.getElementById('smsMessage');
+        const wifiSSIDInput = document.getElementById('wifiSSID');
+        const wifiPasswordInput = document.getElementById('wifiPassword');
+        const wifiEncryptionSelect = document.getElementById('wifiEncryption');
+        const wifiHiddenCheckbox = document.getElementById('wifiHidden');
+
+        // Error Message Paragraphs
+        const urlDataError = document.getElementById('urlDataError');
+        const textDataError = document.getElementById('textDataError');
+        const vcardFirstNameError = document.getElementById('vcardFirstNameError');
+        const calSummaryError = document.getElementById('calSummaryError');
+        const calStartError = document.getElementById('calStartError');
+        const calEndError = document.getElementById('calEndError');
+        const emailToError = document.getElementById('emailToError');
+        const phoneNumError = document.getElementById('phoneNumError');
+        const smsNumberError = document.getElementById('smsNumberError');
+        const wifiSSIDError = document.getElementById('wifiSSIDError');
+
+        let qrCodeInstance = null; // Holds the qrcode.js instance (used internally)
+        let currentQrData = null; // Holds the text data for sharing
+        let bsodActive = false; // Flag to track BSOD state
+
+        // --- Helper Functions ---
+        const escapeVCard = (str) => str ? str.replace(/\\/g, '\\\\').replace(/,/g, '\\,').replace(/;/g, '\\;').replace(/\n/g, '\\n') : '';
+        const escapeICal = (str) => str ? str.replace(/\\/g, '\\\\').replace(/,/g, '\\,').replace(/;/g, '\\;').replace(/\n/g, '\\n') : '';
+        const formatICalDateTime = (dateTimeStr) => { if (!dateTimeStr) return ''; return dateTimeStr.replace(/[-:]/g, '').replace('T', 'T') + '00'; };
+        function showFeedback(message) { feedbackMessage.textContent = message; feedbackMessage.classList.remove('hidden'); setTimeout(() => { feedbackMessage.textContent = ''; feedbackMessage.classList.add('hidden'); }, 3000); }
+
+        // --- Event Listeners ---
+        dataTypeSelect.addEventListener('change', () => {
+            const selectedType = dataTypeSelect.value;
+            allInputSections.forEach(section => { section.classList.toggle('active', section.id === `${selectedType}-input`); });
+            updatePlaceholderText(selectedType);
+            clearAllErrors();
+            clearQRCode();
+        });
+
+        toggleAdvancedBtn.addEventListener('click', () => {
+            advancedOptionsContainer.classList.toggle('hidden');
+        });
+
+        generateBtn.addEventListener('click', () => {
+            clearAllErrors();
+            errorMessage.textContent = '';
+            feedbackMessage.textContent = '';
+            const data = getQrData();
+            const size = parseInt(qrSizeSelect.value, 10);
+            const errorCorrectionLevel = qrErrorCorrectionSelect.value;
+            const padding = parseInt(qrPaddingSelect.value, 10);
+            const selectedPalette = colorPaletteSelect.value;
+            let colorDark = '#000000', colorLight = '#ffffff';
+            switch (selectedPalette) {
+                case 'black-white': break;
+                case 'darkblue-white': colorDark = '#000080'; colorLight = '#ffffff'; break;
+                case 'darkgreen-white': colorDark = '#008000'; colorLight = '#ffffff'; break;
+                case 'darkred-white': colorDark = '#8B0000'; colorLight = '#ffffff'; break;
+                case 'darkgray-white': colorDark = '#808080'; colorLight = '#ffffff'; break;
+                case 'black-lightgray': colorDark = '#000000'; colorLight = '#e0e0e0'; break;
+                case 'darkblue-lightgray': colorDark = '#000080'; colorLight = '#e0e0e0'; break;
+            }
+            currentQrData = data;
+            if (data) {
+                generateQRCodeWithPadding(data, size, errorCorrectionLevel, colorDark, colorLight, padding);
+                actionsSection.classList.remove('hidden');
+                checkShareSupport();
+            } else {
+                console.error("No valid data to generate QR code.");
+                clearQRCode();
+                currentQrData = null;
+            }
+        });
+
+        downloadBtn.addEventListener('click', () => {
+             const canvas = qrCodeContainer.querySelector('canvas');
+            if (canvas) {
+                const dataUrl = canvas.toDataURL('image/png');
+                const link = document.createElement('a');
+                link.href = dataUrl;
+                link.download = `qrcode_${dataTypeSelect.value}_${Date.now()}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            } else { showError(null, 'No QR Code to download.'); }
+        });
+
+        copyBtn.addEventListener('click', async () => {
+            const canvas = qrCodeContainer.querySelector('canvas');
+            if (!canvas) { showError(null, 'No QR Code to copy.'); return; }
+            if (!navigator.clipboard || !navigator.clipboard.write) { showError(null, 'Clipboard API not available (HTTPS required).'); return; }
+            try {
+                 canvas.toBlob(async (blob) => {
+                    if (!blob) { showError(null, 'Failed to create image blob for copying.'); return; }
+                    const item = new ClipboardItem({ 'image/png': blob });
+                    await navigator.clipboard.write([item]);
+                    showFeedback('QR Code copied!');
+                    const originalText = copyBtn.textContent; copyBtn.textContent = 'Copied!';
+                    setTimeout(() => { copyBtn.textContent = originalText; }, 2000);
+                }, 'image/png');
+            } catch (err) {
+                 let copyErrMsg = `Copy failed: ${err.message}`;
+                 if (err.name === 'NotAllowedError') { copyErrMsg = 'Copy failed: Clipboard permission denied.'; }
+                 showError(null, copyErrMsg);
+                 console.error('Copy failed:', err);
+            }
+        });
+
+        shareBtn.addEventListener('click', async () => {
+            const canvas = qrCodeContainer.querySelector('canvas');
+            if (!canvas || !currentQrData) { showError(null, 'Generate a QR Code first to share.'); return; }
+            if (!navigator.share) { showError(null, 'Web Share API not supported.'); return; }
+            try {
+                canvas.toBlob(async (blob) => {
+                    if (!blob) { showError(null, 'Failed to create image blob for sharing.'); return; }
+                    const file = new File([blob], 'qrcode.png', { type: 'image/png' });
+                    const shareData = { files: [file], title: 'QR Code', text: `QR Code for: ${currentQrData.substring(0, 50)}${currentQrData.length > 50 ? '...' : ''}` };
+                    // Check if sharing files is possible
+                    if (navigator.canShare && navigator.canShare(shareData)) {
+                        await navigator.share(shareData);
+                        showFeedback('QR Code shared!');
+                    } else if (!navigator.canShare) {
+                        // If canShare isn't supported, attempt to share anyway
+                         await navigator.share(shareData);
+                         showFeedback('QR Code shared!');
+                    } else {
+                         showError(null, 'Sharing this QR code is not supported by your browser/device.');
+                    }
+                }, 'image/png');
+            } catch (err) {
+                if (err.name !== 'AbortError') { // Ignore user cancellation
+                    let shareErrMsg = `Share failed: ${err.message}`;
+                    if (err.name === 'NotAllowedError') { shareErrMsg = 'Share failed: Permission denied or not allowed.'; }
+                    else if (err.name === 'NotFoundError') { shareErrMsg = 'Share failed: No compatible share targets found.'; }
+                    showError(null, shareErrMsg);
+                    console.error('Share failed:', err);
+                }
+            }
+        });
+
+        printBtn.addEventListener('click', () => {
+            const canvas = qrCodeContainer.querySelector('canvas');
+             if (!canvas) { showError(null, 'No QR Code to print.'); return; }
+             const dataUrl = canvas.toDataURL('image/png');
+             const iframe = document.createElement('iframe');
+             iframe.style.position = 'absolute'; iframe.style.width = '0'; iframe.style.height = '0'; iframe.style.border = '0';
+             document.body.appendChild(iframe);
+             const pri = iframe.contentWindow;
+             pri.document.open();
+             pri.document.write(`<html><head><title>Print QR Code</title></head><body style="text-align:center; margin-top: 50px;"><img src="${dataUrl}" alt="QR Code" style="max-width: 90%; height: auto;"></body></html>`);
+             pri.document.close();
+             // Function to handle printing and cleanup
+             const printAndRemove = () => {
+                 // Check if iframe still exists (prevents double execution)
+                 if (!document.body.contains(iframe)) return;
+                 try {
+                     pri.focus(); // Focus is necessary for print() to work
+                     pri.print();
+                 } catch (e) {
+                     console.error("Print error:", e);
+                     showError(null, "Printing failed. Try downloading the PNG and printing it manually.");
+                 } finally {
+                     // Remove the iframe regardless of print success/failure
+                     document.body.removeChild(iframe);
+                 }
+             };
+             // Use onload for reliability, but also have a fallback timeout
+             let fallbackTimeoutId = setTimeout(printAndRemove, 1200); // Slightly longer timeout
+             iframe.onload = () => {
+                 clearTimeout(fallbackTimeoutId); // Cancel the fallback if onload fires
+                 printAndRemove();
+             };
+        });
+
+        // --- BSOD Easter Egg Logic ---
+        function triggerBSOD(event) {
+            event.preventDefault();
+            if (bsodActive) return;
+            bsodActive = true;
+            bsodOverlay.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+            // Add listener to dismiss BSOD
+            document.addEventListener('keydown', dismissBSOD, { once: true }); // Use 'once' to auto-remove listener
+        }
+
+        function dismissBSOD() {
+            bsodActive = false;
+            bsodOverlay.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        minBtn.addEventListener('click', triggerBSOD);
+        maxBtn.addEventListener('click', triggerBSOD);
+        closeBtn.addEventListener('click', triggerBSOD);
+
+        // Blinking cursor for BSOD
+        setInterval(() => {
+            if (bsodActive) {
+                blinkCursor.style.visibility = (blinkCursor.style.visibility === 'hidden' ? 'visible' : 'hidden');
+            } else {
+                 blinkCursor.style.visibility = 'visible';
+            }
+        }, 500);
+
+
+        // --- Core Functions ---
+
+        // Generates QR code with padding by drawing onto a larger canvas
+        function generateQRCodeWithPadding(data, size, errorCorrectionLevel, colorDark, colorLight, padding) {
+            // 1. Create a temporary container for the raw QR code
+            const tempContainer = document.createElement('div');
+            tempContainer.style.position = 'absolute';
+            tempContainer.style.left = '-9999px'; // Hide off-screen
+            document.body.appendChild(tempContainer);
+
+            try {
+                // 2. Generate the raw QR code using qrcode.js in the temp container
+                new QRCode(tempContainer, {
+                    text: data, width: size, height: size,
+                    colorDark: colorDark, colorLight: colorLight,
+                    correctLevel: QRCode.CorrectLevel[errorCorrectionLevel]
+                });
+
+                const rawCanvas = tempContainer.querySelector('canvas');
+                if (!rawCanvas) { throw new Error("Failed to find generated canvas in temp container."); }
+
+                // 3. Create the final canvas with padding
+                const finalSize = size + (padding * 2);
+                const finalCanvas = document.createElement('canvas');
+                finalCanvas.width = finalSize; finalCanvas.height = finalSize;
+                const ctx = finalCanvas.getContext('2d');
+
+                // 4. Fill the final canvas with the background color
+                ctx.fillStyle = colorLight;
+                ctx.fillRect(0, 0, finalSize, finalSize);
+
+                // 5. Draw the raw QR code onto the final canvas, offset by padding
+                ctx.drawImage(rawCanvas, padding, padding, size, size);
+
+                // 6. Clear the main container and display the final padded canvas
+                qrCodeContainer.innerHTML = '';
+                qrCodeContainer.appendChild(finalCanvas);
+                qrCodeContainer.style.minHeight = 'auto'; // Reset min height
+
+            } catch (error) {
+                showError(null, `Generate failed: ${error.message}`);
+                console.error("QR Code generation failed:", error);
+                clearQRCode(); // Clear area on failure
+            } finally {
+                // 7. Clean up the temporary container
+                if (document.body.contains(tempContainer)) { document.body.removeChild(tempContainer); }
+            }
+        }
+
+        // Updates the placeholder text in the QR code display area
+        function updatePlaceholderText(type) {
+             const placeholderSpan = document.getElementById('qrCodePlaceholderSpan');
+            if (!placeholderSpan) return;
+            let placeholder = 'Enter data and click "Generate"';
+             switch (type) {
+                case 'url': placeholder = 'Enter URL'; break;
+                case 'text': placeholder = 'Enter text'; break;
+                case 'vcard': placeholder = 'Enter contact details'; break;
+                case 'calendar': placeholder = 'Enter event details'; break;
+                case 'email': placeholder = 'Enter email details'; break;
+                case 'phone': placeholder = 'Enter phone number'; break;
+                case 'sms': placeholder = 'Enter SMS details'; break;
+                case 'wifi': placeholder = 'Enter Wi-Fi details'; break;
+            }
+            placeholderSpan.textContent = placeholder + ' and click "Generate"';
+        }
+
+        // Clears the QR code display and resets related state
+        function clearQRCode() {
+            qrCodeContainer.innerHTML = '<span id="qrCodePlaceholderSpan" class="text-center"></span>';
+            updatePlaceholderText(dataTypeSelect.value);
+            actionsSection.classList.add('hidden');
+            qrCodeInstance = null; // Not strictly necessary with current padding method, but good practice
+            currentQrData = null;
+            checkShareSupport();
+        }
+
+        // Clears all error and feedback messages
+        function clearAllErrors() {
+            const errorElements = document.querySelectorAll('.error-message');
+            errorElements.forEach(el => { el.textContent = ''; el.classList.add('hidden'); });
+             errorMessage.textContent = ''; errorMessage.classList.add('hidden');
+             feedbackMessage.textContent = ''; feedbackMessage.classList.add('hidden');
+        }
+
+        // Shows an error message, either for a specific field or generally
+        function showError(element, message) {
+            clearAllErrors(); // Clear previous errors first
+            const targetElement = element || errorMessage; // Default to general error message
+            if (targetElement) {
+                targetElement.textContent = message;
+                targetElement.classList.remove('hidden');
+            }
+        }
+
+        // Gathers data from the active input section and formats it for QR code
+        function getQrData() {
+            const type = dataTypeSelect.value;
+            let data = '';
+             try {
+                 switch (type) {
+                    case 'url':
+                        data = urlDataInput.value.trim();
+                        if (!data) { showError(urlDataError, 'URL cannot be empty.'); return null; }
+                        // Basic URL validation and prefixing
+                        if (!data.match(/^[a-zA-Z]+:\/\//)) {
+                             if (data.startsWith('www.')) { data = 'https://' + data; }
+                             else if (data.includes('.')) { data = 'http://' + data; } // Assume http if no protocol and has a dot
+                             else { showError(urlDataError, 'Please enter a valid URL (e.g., https://example.com).'); return null; }
+                        }
+                        try { new URL(data); } catch (_) { showError(urlDataError, 'Invalid URL format.'); return null; }
+                        break;
+                    case 'text':
+                        data = textDataInput.value.trim();
+                        if (!data) { showError(textDataError, 'Text cannot be empty.'); return null; }
+                        break;
+                    case 'vcard':
+                        const fn = vcardFirstNameInput.value.trim(); const ln = vcardLastNameInput.value.trim();
+                        if (!fn) { showError(vcardFirstNameError, 'First Name is required for vCard.'); return null; }
+                        const org = vcardOrgInput.value.trim(); const title = vcardTitleInput.value.trim();
+                        const telCell = vcardTelCellInput.value.trim(); const telWork = vcardTelWorkInput.value.trim();
+                        const email = vcardEmailInput.value.trim(); const website = vcardWebsiteInput.value.trim();
+                        // Construct vCard data
+                        data = 'BEGIN:VCARD\nVERSION:3.0\n';
+                        data += `N:${escapeVCard(ln)};${escapeVCard(fn)};;;\n`; // Last Name; First Name; Middle; Prefix; Suffix
+                        data += `FN:${escapeVCard(fn + (ln ? ' ' + ln : ''))}\n`;
+                        if (org) data += `ORG:${escapeVCard(org)}\n`;
+                        if (title) data += `TITLE:${escapeVCard(title)}\n`;
+                        if (telCell) data += `TEL;TYPE=CELL:${escapeVCard(telCell)}\n`;
+                        if (telWork) data += `TEL;TYPE=WORK:${escapeVCard(telWork)}\n`;
+                        if (email) data += `EMAIL:${escapeVCard(email)}\n`;
+                        if (website) data += `URL:${escapeVCard(website)}\n`;
+                        data += 'END:VCARD';
+                        break;
+                    case 'calendar':
+                        const summary = calSummaryInput.value.trim(); const startStr = calStartInput.value; const endStr = calEndInput.value;
+                        const location = calLocationInput.value.trim(); const description = calDescriptionInput.value.trim();
+                        if (!summary) { showError(calSummaryError, 'Event Summary/Title is required.'); return null; }
+                        if (!startStr) { showError(calStartError, 'Start Date & Time is required.'); return null; }
+                        if (!endStr) { showError(calEndError, 'End Date & Time is required.'); return null; }
+                        const startDt = new Date(startStr); const endDt = new Date(endStr);
+                        if (isNaN(startDt.getTime())) { showError(calStartError, 'Invalid Start Date & Time format.'); return null; }
+                        if (isNaN(endDt.getTime())) { showError(calEndError, 'Invalid End Date & Time format.'); return null; }
+                        if (endDt <= startDt) { showError(calEndError, 'End Date & Time must be after Start Date & Time.'); return null; }
+                        const dtStamp = formatICalDateTime(new Date().toISOString().slice(0, 16)).replace('T','T') + 'Z'; // Timestamp for iCal
+                        // Construct iCalendar data
+                        data = 'BEGIN:VEVENT\n';
+                        data += `SUMMARY:${escapeICal(summary)}\n`;
+                        data += `DTSTAMP:${dtStamp}\n`; // Timestamp of creation
+                        data += `DTSTART:${formatICalDateTime(startStr)}\n`; // Use floating time for broader compatibility
+                        data += `DTEND:${formatICalDateTime(endStr)}\n`;
+                        if (location) data += `LOCATION:${escapeICal(location)}\n`;
+                        if (description) data += `DESCRIPTION:${escapeICal(description)}\n`;
+                        data += 'END:VEVENT';
+                        break;
+                    case 'email':
+                        const to = emailToInput.value.trim();
+                        if (!to) { showError(emailToError, 'Recipient email cannot be empty.'); return null; }
+                        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) { showError(emailToError, 'Invalid email format.'); return null; }
+                        const subject = emailSubjectInput.value.trim(); const body = emailBodyInput.value.trim();
+                        data = `mailto:${to}`;
+                        const params = [];
+                        if (subject) params.push(`subject=${encodeURIComponent(subject)}`);
+                        if (body) params.push(`body=${encodeURIComponent(body)}`);
+                        if (params.length > 0) data += `?${params.join('&')}`;
+                        break;
+                    case 'phone':
+                        data = phoneNumInput.value.trim();
+                        if (!data) { showError(phoneNumError, 'Phone number cannot be empty.'); return null; }
+                        if (!/^[+\d\s()./-]+$/.test(data)) { showError(phoneNumError, 'Invalid phone number format.'); return null; }
+                        data = `tel:${data.replace(/[^\d+]/g, '')}`; // Clean number for tel: URI
+                        break;
+                    case 'sms':
+                        const number = smsNumberInput.value.trim();
+                        if (!number) { showError(smsNumberError, 'Phone number cannot be empty.'); return null; }
+                        if (!/^[+\d\s-]+$/.test(number)) { showError(smsNumberError, 'Invalid phone number format.'); return null; }
+                        const message = smsMessageInput.value.trim();
+                        data = `SMSTO:${number}`;
+                        if (message) data += `:${message}`;
+                        break;
+                    case 'wifi':
+                        const ssid = wifiSSIDInput.value.trim();
+                        if (!ssid) { showError(wifiSSIDError, 'Network Name (SSID) cannot be empty.'); return null; }
+                        const password = wifiPasswordInput.value; const encryption = wifiEncryptionSelect.value; const hidden = wifiHiddenCheckbox.checked;
+                        const escapeWifi = (str) => str.replace(/([\\;,":])/g, '\\$1'); // Escape special Wi-Fi characters
+                        data = `WIFI:T:${encryption};S:${escapeWifi(ssid)};`;
+                        if (encryption !== 'nopass') data += `P:${escapeWifi(password)};`;
+                        if (hidden) data += 'H:true;';
+                        data += ';'; // End marker for Wi-Fi data
+                        break;
+                    default:
+                        showError(null, 'Invalid data type selected.');
+                        console.error('Invalid data type selected:', type);
+                        return null;
+                }
+                 return data;
+            } catch (error) {
+                 showError(null, `Error processing data: ${error.message}`);
+                 console.error("Error getting QR data:", error);
+                 return null;
+            }
+        }
+
+        // Checks if Web Share API is supported and enables/disables button
+        function checkShareSupport() {
+             if (navigator.share) {
+                 shareBtn.disabled = false;
+             } else {
+                 shareBtn.disabled = true;
+                 // Optionally provide feedback that sharing is not supported
+                 // console.log("Web Share API not supported.");
+             }
+        }
+
+        // --- Initial Setup ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set initial active input section based on dropdown
+            const initialType = dataTypeSelect.value;
+            allInputSections.forEach(section => {
+                 section.classList.toggle('active', section.id === `${initialType}-input`);
+            });
+            // Clear QR code area and check share support on load
+            clearQRCode();
+            // Ensure advanced options are hidden initially
+            advancedOptionsContainer.classList.add('hidden');
+        });
+
+    </script>
+
+</body>
+</html>
