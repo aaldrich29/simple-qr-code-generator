@@ -1,0 +1,7 @@
+# Simple QR Code Generator
+No frills online QR code generator.
+
+I got tired of wading through ads and account sign-ups when I wanted to generator a simple QR code, so here you go! Styled after Windows 95. Watch out for the BSOD.
+
+![image](https://github.com/user-attachments/assets/97166704-e61c-4337-8d11-765727f8d273)
+
