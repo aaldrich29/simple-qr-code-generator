@@ -7,3 +7,4 @@ Try it now: [Simple QR Code Generator](https://aaldrich29.github.io/simple-qr-co
 
 ![image](https://github.com/user-attachments/assets/97166704-e61c-4337-8d11-765727f8d273)
 
+![image](https://github.com/user-attachments/assets/6a2df1b5-f550-4cc9-ad9f-3880b07b2b8d)
